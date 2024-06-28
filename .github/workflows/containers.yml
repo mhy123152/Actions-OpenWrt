@@ -8,14 +8,16 @@ on:
     inputs:
       ref:
         description: "Tag or branch to deploy (empty for main)"
-        default: "main"
-        required: false
+        default: "v23.05.3"
+        required: true
       target:
         description: "Single target to build (empty for all)"
-        required: false
+        default: "x86/64"
+        required: true
       file_host:
         description: "File host to use (empty for default)"
-        required: false
+        default: "https://github.com/mhy123152/Actions-OpenWrt/releases/download/2024.06.29-0149"
+        required: true
       prefix:
         description: "Prefix for the image name (add '-' at the end)"
         required: false
@@ -44,33 +46,34 @@ jobs:
       - name: Set release manually
         if: github.event.inputs.ref != ''
         run: |
-          # export REF=${{ github.event.inputs.ref == 'master' && 'main' || github.event.inputs.ref }}
-          # echo "REF=$REF" >> "$GITHUB_ENV"
-
-          # case $REF in
-          #   main)
-          #     VERSION=SNAPSHOT
-          #     echo "VERSION_PATH=snapshots" >> "$GITHUB_ENV"
-          #   ;;
-          #   openwrt-*)
-          #     VERSION=${REF//openwrt-/}-SNAPSHOT
-          #     echo "VERSION_PATH=releases/$VERSION" >> "$GITHUB_ENV"
-          #   ;;
-          #   v*)
-          #     VERSION=${REF//v/}
-          #     echo "VERSION_PATH=releases/$VERSION" >> "$GITHUB_ENV"
-          #   ;;
-          #   *)
-          #     echo "No tag or branch found"
-          #     exit 1
-          #   ;;
-          # esac
-
-          export REF="v23.05.3"
+          export REF=${{ github.event.inputs.ref == 'master' && 'main' || github.event.inputs.ref }}
           echo "REF=$REF" >> "$GITHUB_ENV"
-          VERSION=${REF//v/}
+
+          case $REF in
+            main)
+              VERSION=SNAPSHOT
+              echo "VERSION_PATH=snapshots" >> "$GITHUB_ENV"
+            ;;
+            openwrt-*)
+              VERSION=${REF//openwrt-/}-SNAPSHOT
+              echo "VERSION_PATH=releases/$VERSION" >> "$GITHUB_ENV"
+            ;;
+            v*)
+              VERSION=${REF//v/}
+              echo "VERSION_PATH=releases/$VERSION" >> "$GITHUB_ENV"
+            ;;
+            *)
+              echo "No tag or branch found"
+              exit 1
+            ;;
+          esac
+
+          # export REF="v23.05.3"
+          # echo "REF=$REF" >> "$GITHUB_ENV"
+          # VERSION=${REF//v/}
+          # echo "VERSION_PATH=releases/$VERSION" >> "$GITHUB_ENV"
+
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          echo "VERSION_PATH=releases/$VERSION" >> "$GITHUB_ENV"
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -81,8 +84,8 @@ jobs:
       - name: Set targets
         id: find_targets
         run: |
-          # TARGET_FILTER="${{ github.event.inputs.target }}"
-          TARGET_FILTER="x86/64"
+          # TARGET_FILTER="x86/64"
+          TARGET_FILTER="${{ github.event.inputs.target }}"
 
           # imagebuilders & rootfs
           JSON_IB='['
@@ -150,10 +153,9 @@ jobs:
           echo "version=${VERSION:-SNAPSHOT}" >> "$GITHUB_OUTPUT"
           echo "version_path=${VERSION_PATH:-snapshots}" >> "$GITHUB_OUTPUT"
 
-          # FILE_HOST=${{ needs.generate_matrix.outputs.file_host }}
+          FILE_HOST=${{ needs.generate_matrix.outputs.file_host }}
+          
           # echo "file_host=${FILE_HOST:-mirror-03.infra.openwrt.org}" >> "$GITHUB_OUTPUT"
-
-          FILE_HOST="https://github.com/mhy123152/Actions-OpenWrt/releases/download/2024.06.29-0149"
           echo "file_host=$FILE_HOST" >> "$GITHUB_OUTPUT"
 
   push-rootfs-container:
