@@ -45,7 +45,8 @@ RUN wget --quiet "$DOWNLOAD_PATH/$(cat ~/file_name)"
 RUN tar xf "$(cat ~/file_name)" --strip=1 --no-same-owner -C .
 RUN rm -rf "$(cat ~/file_name)"
 
-FROM $BASE_IMAGE
+# FROM $BASE_IMAGE
+FROM scratch
 
 ARG USER=buildbot
 ARG WORKDIR=/builder/
