@@ -19,9 +19,9 @@ ENV DOWNLOAD_PATH=$FILE_HOST
 # RUN curl "https://$FILE_HOST/$DOWNLOAD_PATH/sha256sums.asc" -fs -o sha256sums.asc || true
 # RUN curl "https://$FILE_HOST/$DOWNLOAD_PATH/sha256sums.sig" -fs -o sha256sums.sig || true
 
-RUN curl "https://$DOWNLOAD_PATH/sha256sums" -fs -o sha256sums
-RUN curl "https://$DOWNLOAD_PATH/sha256sums.asc" -fs -o sha256sums.asc || true
-RUN curl "https://$DOWNLOAD_PATH/sha256sums.sig" -fs -o sha256sums.sig || true
+RUN curl "$DOWNLOAD_PATH/sha256sums" -fs -o sha256sums
+RUN curl "$DOWNLOAD_PATH/sha256sums.asc" -fs -o sha256sums.asc || true
+RUN curl "$DOWNLOAD_PATH/sha256sums.sig" -fs -o sha256sums.sig || true
 
 ADD keys/*.asc keys/
 RUN gpg --import keys/*.asc
@@ -32,7 +32,7 @@ RUN echo $(grep "$DOWNLOAD_FILE" sha256sums | cut -d "*" -f 2) >> ~/file_name
 
 # download imagebuilder/sdk archive
 # RUN wget --quiet "https://$FILE_HOST/$DOWNLOAD_PATH/$(cat ~/file_name)"
-RUN wget --quiet "https://$DOWNLOAD_PATH/$(cat ~/file_name)"
+RUN wget --quiet "$DOWNLOAD_PATH/$(cat ~/file_name)"
 
 # shrink checksum file to single desired file and verify downloaded archive
 RUN grep "$(cat ~/file_name)" sha256sums > sha256sums_min
