@@ -153,11 +153,6 @@ jobs:
           echo "version=${VERSION:-SNAPSHOT}" >> "$GITHUB_OUTPUT"
           echo "version_path=${VERSION_PATH:-snapshots}" >> "$GITHUB_OUTPUT"
 
-          FILE_HOST=${{ needs.generate_matrix.outputs.file_host }}
-          
-          # echo "file_host=${FILE_HOST:-mirror-03.infra.openwrt.org}" >> "$GITHUB_OUTPUT"
-          echo "file_host=$FILE_HOST" >> "$GITHUB_OUTPUT"
-
   push-rootfs-container:
     name: RootFS
     runs-on: ubuntu-latest
@@ -216,6 +211,11 @@ jobs:
       - name: Generate build args
         id: build_args
         run: |
+          FILE_HOST=${{ needs.generate_matrix.outputs.file_host }}
+          
+          # echo "file_host=${FILE_HOST:-mirror-03.infra.openwrt.org}" >> "$GITHUB_OUTPUT"
+          echo "file_host=$FILE_HOST" >> "$GITHUB_OUTPUT"
+
           echo 'args<<EOF
             DOWNLOAD_FILE=openwrt-.*-rootfs.tar.gz
             WORKDIR=/
@@ -224,8 +224,7 @@ jobs:
             TARGET=${{ matrix.target }}
             BASE_IMAGE=scratch
             CMD=ash
-            # FILE_HOST=${{ needs.generate_matrix.outputs.file_host }}
-            FILE_HOST="https://github.com/mhy123152/Actions-OpenWrt/releases/download/2024.06.29-0149"
+            FILE_HOST=${{ needs.generate_matrix.outputs.file_host }}
           EOF' >> $GITHUB_OUTPUT
 
       - name: Build
