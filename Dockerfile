@@ -19,7 +19,7 @@ ENV DOWNLOAD_PATH=$FILE_HOST
 # # RUN curl "https://$FILE_HOST/$DOWNLOAD_PATH/sha256sums.asc" -fs -o sha256sums.asc || true
 # # RUN curl "https://$FILE_HOST/$DOWNLOAD_PATH/sha256sums.sig" -fs -o sha256sums.sig || true
 
-RUN curl "$DOWNLOAD_PATH/sha256sums" -fs -o sha256sums
+RUN curl -L "$DOWNLOAD_PATH/sha256sums" -o sha256sums
 # RUN curl "$DOWNLOAD_PATH/sha256sums.asc" -fs -o sha256sums.asc || true
 # RUN curl "$DOWNLOAD_PATH/sha256sums.sig" -fs -o sha256sums.sig || true
 
