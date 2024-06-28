@@ -224,7 +224,8 @@ jobs:
             TARGET=${{ matrix.target }}
             BASE_IMAGE=scratch
             CMD=ash
-            FILE_HOST=${{ needs.generate_matrix.outputs.file_host }}
+            # FILE_HOST=${{ needs.generate_matrix.outputs.file_host }}
+            FILE_HOST="https://github.com/mhy123152/Actions-OpenWrt/releases/download/2024.06.29-0149"
           EOF' >> $GITHUB_OUTPUT
 
       - name: Build
