@@ -27,12 +27,12 @@ ENV DOWNLOAD_PATH=$FILE_HOST
 # RUN gpg --import keys/*.asc
 # RUN gpg --with-fingerprint --verify sha256sums.asc sha256sums
 
-# # determine archive name
-# RUN echo $(grep "$DOWNLOAD_FILE" sha256sums | cut -d "*" -f 2) >> ~/file_name
+# determine archive name
+RUN echo $(grep "$DOWNLOAD_FILE" sha256sums | cut -d "*" -f 2) >> ~/file_name
 
-# # download imagebuilder/sdk archive
-# # RUN wget --quiet "https://$FILE_HOST/$DOWNLOAD_PATH/$(cat ~/file_name)"
-# RUN wget --quiet "$DOWNLOAD_PATH/$(cat ~/file_name)"
+# download imagebuilder/sdk archive
+# RUN wget --quiet "https://$FILE_HOST/$DOWNLOAD_PATH/$(cat ~/file_name)"
+RUN wget --quiet "$DOWNLOAD_PATH/$(cat ~/file_name)"
 
 # # shrink checksum file to single desired file and verify downloaded archive
 # RUN grep "$(cat ~/file_name)" sha256sums > sha256sums_min
@@ -42,7 +42,6 @@ ENV DOWNLOAD_PATH=$FILE_HOST
 # # cleanup
 # RUN rm -rf sha256sums{,_min,.sig,.asc} keys/
 
-RUN wget --quiet "$DOWNLOAD_PATH/$DOWNLOAD_FILE"
 RUN tar xf "$(cat ~/file_name)" --strip=1 --no-same-owner -C .
 RUN rm -rf "$(cat ~/file_name)"
 
