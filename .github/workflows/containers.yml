@@ -224,7 +224,8 @@ jobs:
             TARGET=${{ matrix.target }}
             BASE_IMAGE=scratch
             CMD=ash
-            FILE_HOST=${{ needs.generate_matrix.outputs.file_host }}
+            # FILE_HOST=${{ needs.generate_matrix.outputs.file_host }}
+            DOWNLOAD_PATH=${{ needs.generate_matrix.outputs.file_host }}
           EOF' >> $GITHUB_OUTPUT
 
       - name: Build
