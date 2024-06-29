@@ -197,8 +197,8 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ghcr.io/mhy123152/rootfs
-            docker.io/mhy123152/rootfs
+            ghcr.io/mhy123152/openwrt-rootfs
+            docker.io/mhy123152/openwrt-rootfs
           flavor: |
             latest=false
             prefix=${{ github.event.inputs.prefix }}
