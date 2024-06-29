@@ -19,5 +19,5 @@
 
 # Add rtl8111 driver kmod
 cd package
-git https://github.com/sbwml/package_kernel_r8168
+git clone https://github.com/sbwml/package_kernel_r8168
 cd ..
