@@ -16,3 +16,8 @@
 # Add a feed source
 # echo 'src-git helloworld https://github.com/fw876/helloworld' >>feeds.conf.default
 #echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall' >>feeds.conf.default
+
+# Add rtl8111 driver kmod
+cd package
+git https://github.com/sbwml/package_kernel_r8168
+cd ..
