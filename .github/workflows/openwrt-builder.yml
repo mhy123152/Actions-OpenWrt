@@ -19,6 +19,7 @@ on:
 env:
   REPO_URL: https://github.com/openwrt/openwrt
   REPO_BRANCH: v23.05.3
+  TARGET: x86/64
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
   DIY_P1_SH: diy-part1.sh
@@ -27,10 +28,18 @@ env:
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
+  FILE_HOST: https://github.com/mhy123152/Actions-OpenWrt/releases/download
+  DEVICE_NAME:
+  FILE_DATE:  
+  FIRMWARE:
+  PREFIX:
 
 jobs:
   build:
+    name: Build Openwrt
     runs-on: ubuntu-22.04
+    outputs:
+      release_tag: ${{ steps.tag.outputs.release_tag }}
 
     steps:
     - name: Checkout
@@ -158,3 +167,217 @@ jobs:
         delete_tags: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
+  generate_matrix:
+    name: Set matrix
+    runs-on: ubuntu-latest
+    outputs:
+      imagebuilders: ${{ steps.find_targets.outputs.imagebuilders }}
+      rootfs: ${{ steps.find_targets.outputs.rootfs }}
+      sdks: ${{ steps.find_targets.outputs.sdks }}
+      ref: ${{ steps.find_targets.outputs.ref }}
+      version: ${{ steps.find_targets.outputs.version }}
+      version_path: ${{ steps.find_targets.outputs.version_path }}
+      file_host: ${{ steps.find_targets.outputs.file_host }}
+
+    steps:
+      - name: Set release manually
+        run: |
+          echo "REF=$REPO_BRANCH" >> "$GITHUB_ENV"
+
+          case $REF in
+            main)
+              VERSION=SNAPSHOT
+              echo "VERSION_PATH=snapshots" >> "$GITHUB_ENV"
+            ;;
+            openwrt-*)
+              VERSION=${REF//openwrt-/}-SNAPSHOT
+              echo "VERSION_PATH=releases/$VERSION" >> "$GITHUB_ENV"
+            ;;
+            v*)
+              VERSION=${REF//v/}
+              echo "VERSION_PATH=releases/$VERSION" >> "$GITHUB_ENV"
+            ;;
+            *)
+              echo "No tag or branch found"
+              exit 1
+            ;;
+          esac
+
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: openwrt/openwrt
+          ref: ${{ env.REPO_BRANCH }}
+
+      - name: Set targets
+        id: find_targets
+        run: |
+          # TARGET_FILTER="x86/64"
+          TARGET_FILTER=${{ env.TARGET }}
+
+          # imagebuilders & rootfs
+          JSON_IB='['
+          FIRST_IB=1
+
+          JSON_ROOTFS='['
+          FIRST_ROOTFS=1
+
+          while read -r line;
+          do
+            TARGET=$(echo "$line" | cut -d " " -f 1)
+            ARCH=$(echo "$line" | cut -d " " -f 2)
+
+            [[ $FIRST_IB -ne 1 ]] && JSON_IB="$JSON_IB"','
+            FIRST_IB=0
+
+            JSON_IB="$JSON_IB"'{"target":"'"$TARGET"'"}'
+
+            case "$TARGET" in
+              x86/*|arm*|malta/be|mvebu/cortexa9)
+                [[ $FIRST_ROOTFS -ne 1 ]] && JSON_ROOTFS="$JSON_ROOTFS"','
+                FIRST_ROOTFS=0
+
+                JSON_ROOTFS="$JSON_ROOTFS"'{"target":"'"$TARGET"'","arch":"'"$ARCH"'"}'
+              ;;
+            esac
+
+          done <<< $(perl ./scripts/dump-target-info.pl targets 2>/dev/null | grep "$TARGET_FILTER")
+
+          JSON_IB='{"include":'"$JSON_IB"']}'
+          echo -e "\n---- imagebuilders ----\n"
+          echo "$JSON_IB" | jq
+          echo -e "\n---- imagebuilders ----\n"
+          echo "imagebuilders=$JSON_IB" >> "$GITHUB_OUTPUT"
+
+          JSON_ROOTFS='{"include":'"$JSON_ROOTFS"']}'
+          echo -e "\n---- rootfs ----\n"
+          echo "$JSON_ROOTFS" | jq
+          echo -e "\n---- rootfs ----\n"
+          echo "rootfs=$JSON_ROOTFS" >> "$GITHUB_OUTPUT"
+
+          # sdks
+          JSON='['
+          FIRST=1
+
+          while read -r line;
+          do
+            ARCH=$(echo "$line" | cut -d " " -f 1)
+            [ -z "$TARGET_FILTER" ] && TARGET=$(echo "$line" | cut -d " " -f 2) || TARGET="$TARGET_FILTER"
+            TARGETS=$(echo "$line" | cut -d " " -f 2- | sed -e 's/ /\\n/g')
+
+            [[ $FIRST -ne 1 ]] && JSON="$JSON"','
+            FIRST=0
+
+            JSON="$JSON"'{"arch":"'"$ARCH"'","target":"'"$TARGET"'","tags":"'"$ARCH"'\n'"$TARGETS"'"}'
+          done <<< $(perl ./scripts/dump-target-info.pl architectures 2>/dev/null | grep "$TARGET_FILTER")
+
+          JSON='{"include":'"$JSON"']}'
+          echo -e "\n---- sdks ----\n"
+          echo "$JSON" | jq
+          echo -e "\n---- sdks ----\n"
+          echo "sdks=$JSON" >> "$GITHUB_OUTPUT"
+
+          echo "ref=${REF:-main}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION:-SNAPSHOT}" >> "$GITHUB_OUTPUT"
+          echo "version_path=${VERSION_PATH:-snapshots}" >> "$GITHUB_OUTPUT"
+
+          FILE_HOST=${{ env.FILE_HOST }}
+          
+          # echo "file_host=${FILE_HOST:-mirror-03.infra.openwrt.org}" >> "$GITHUB_OUTPUT"
+          echo "file_host=$FILE_HOST" >> "$GITHUB_OUTPUT"
+
+  push-rootfs-container:
+      name: RootFS
+      runs-on: ubuntu-latest
+      needs: [generate_matrix, build]
+      if: needs.generate_matrix.outputs.rootfs != '{"include":[]}'
+      strategy:
+        fail-fast: False
+        matrix: ${{fromJson(needs.generate_matrix.outputs.rootfs)}}
+
+      steps:
+        - name: Set up QEMU
+          run: |
+            sudo apt-get update
+            sudo apt-get install -y qemu-user-static binfmt-support
+            sudo update-binfmts --import
+
+        - name: Set up Docker Buildx
+          uses: docker/setup-buildx-action@v3
+
+        - name: Login to GitHub Container Registry
+          if: github.event_name != 'pull_request'
+          uses: docker/login-action@v3
+          with:
+            registry: ghcr.io
+            username: ${{ github.actor }}
+            password: ${{ secrets.GITHUB_TOKEN }}
+
+        - name: Login to Docker.io Container Registry
+          if: github.event_name != 'pull_request'
+          uses: docker/login-action@v3
+          with:
+            username: ${{ secrets.DOCKER_USER }}
+            password: ${{ secrets.DOCKER_TOKEN }}
+
+        - name: Docker meta
+          id: meta
+          uses: docker/metadata-action@v5
+          with:
+            images: |
+              ghcr.io/mhy123152/openwrt-rootfs
+              docker.io/mhy123152/openwrt-rootfs
+            flavor: |
+              latest=false
+              prefix=${{ env.PREFIX }}
+            tags: |
+              ${{ matrix.target }}-${{ needs.generate_matrix.outputs.ref }}
+              ${{ matrix.target }}-${{ needs.generate_matrix.outputs.version }}
+              ${{ matrix.target }}-master,enable=${{ needs.generate_matrix.outputs.ref == 'main' }}
+              ${{ matrix.target }},enable=${{ needs.generate_matrix.outputs.version == 'SNAPSHOT' }}
+              ${{ matrix.arch }}-${{ needs.generate_matrix.outputs.ref }}
+              ${{ matrix.arch }}-${{ needs.generate_matrix.outputs.version }}
+              ${{ matrix.arch }}-master,enable=${{ needs.generate_matrix.outputs.ref == 'main' }}
+              ${{ matrix.arch }},enable=${{ needs.generate_matrix.outputs.version == 'SNAPSHOT' }}
+              latest,enable=${{ needs.generate_matrix.outputs.version == 'SNAPSHOT' && matrix.target == 'x86/64'}}
+
+        - name: Generate build args
+          id: build_args
+          run: |
+            echo 'args<<EOF
+              DOWNLOAD_FILE=openwrt-.*-rootfs.tar.gz
+              WORKDIR=/
+              USER=root
+              ARG RELEASE_TAG=${{ needs.build.outputs.release_tag }}
+              TARGET=${{ matrix.target }}
+              BASE_IMAGE=scratch
+              CMD=ash
+              FILE_HOST=${{ needs.generate_matrix.outputs.file_host }}
+            EOF' >> $GITHUB_OUTPUT
+
+        - name: Build
+          id: build
+          uses: docker/build-push-action@v6
+          with:
+            push: false
+            tags: ${{ steps.meta.outputs.tags }}
+            load: true
+            build-args: ${{ steps.build_args.outputs.args }}
+            labels: ${{ steps.meta.outputs.labels }}
+            platforms: linux/${{ matrix.arch }}
+
+        - name: Smoke test
+          run: docker run --platform=linux/${{ matrix.arch }} ${{ steps.build.outputs.imageid }} uname -m
+
+        - name: Push
+          if: github.event_name != 'pull_request'
+          uses: docker/build-push-action@v6
+          with:
+            push: true
+            tags: ${{ steps.meta.outputs.tags }}
+            build-args: ${{ steps.build_args.outputs.args }}
+            labels: ${{ steps.meta.outputs.labels }}
+            platforms: linux/${{ matrix.arch }}

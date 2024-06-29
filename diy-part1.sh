@@ -18,6 +18,6 @@
 #echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall' >>feeds.conf.default
 
 # Add rtl8111 driver kmod
-cd package
-git clone https://github.com/sbwml/package_kernel_r8168
-cd ..
+# cd package
+# git clone https://github.com/sbwml/package_kernel_r8168
+# cd ..
