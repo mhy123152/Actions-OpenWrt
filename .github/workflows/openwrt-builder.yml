@@ -183,7 +183,8 @@ jobs:
     steps:
       - name: Set release manually
         run: |
-          echo "REF=$REPO_BRANCH" >> "$GITHUB_ENV"
+          export REF=${{ env.REPO_BRANCH }}
+          echo "REF=$REF" >> "$GITHUB_ENV"
 
           case $REF in
             main)
