@@ -91,7 +91,7 @@ jobs:
       id: package
       run: |
         cd openwrt
-        make defconfig
+        # make defconfig
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
@@ -153,20 +153,20 @@ jobs:
         body_path: release.txt
         files: ${{ env.FIRMWARE }}/*
 
-    - name: Delete workflow runs
-      uses: Mattraks/delete-workflow-runs@main
-      with:
-        retain_days: 0
-        keep_minimum_runs: 2
+    # - name: Delete workflow runs
+    #   uses: Mattraks/delete-workflow-runs@main
+    #   with:
+    #     retain_days: 0
+    #     keep_minimum_runs: 2
 
-    - name: Remove old Releases
-      uses: dev-drprasad/delete-older-releases@master
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
-      with:
-        keep_latest: 3
-        delete_tags: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # - name: Remove old Releases
+    #   uses: dev-drprasad/delete-older-releases@master
+    #   if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+    #   with:
+    #     keep_latest: 3
+    #     delete_tags: true
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   
   generate_matrix:
     name: Set matrix
@@ -345,40 +345,31 @@ jobs:
               ${{ matrix.arch }},enable=${{ needs.generate_matrix.outputs.version == 'SNAPSHOT' }}
               latest,enable=${{ needs.generate_matrix.outputs.version == 'SNAPSHOT' && matrix.target == 'x86/64'}}
 
-        - name: Generate build args
-          id: build_args
-          run: |
-            echo 'args<<EOF
-              DOWNLOAD_FILE=openwrt-.*-rootfs.tar.gz
-              WORKDIR=/
-              USER=root
-              ARG RELEASE_TAG=${{ needs.build.outputs.release_tag }}
-              TARGET=${{ matrix.target }}
-              BASE_IMAGE=scratch
-              CMD=ash
-              FILE_HOST=${{ needs.generate_matrix.outputs.file_host }}
-            EOF' >> $GITHUB_OUTPUT
-
-        - name: Build
-          id: build
-          uses: docker/build-push-action@v6
+        - name: Download artifact
+          uses: actions/download-artifact@v4
           with:
-            push: false
-            tags: ${{ steps.meta.outputs.tags }}
-            load: true
-            build-args: ${{ steps.build_args.outputs.args }}
-            labels: ${{ steps.meta.outputs.labels }}
-            platforms: linux/${{ matrix.arch }}
+            name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+            path: $GITHUB_WORKSPACE/
 
-        - name: Smoke test
-          run: docker run --platform=linux/${{ matrix.arch }} ${{ steps.build.outputs.imageid }} uname -m
+        - name: Prepare build
+          id: prebuild
+          run: |
+            cd $GITHUB_WORKSPACE/dockerx86
+            cp ${{ env.FIRMWARE }}/openwrt-x86-64-generic-rootfs.tar.gz $GITHUB_WORKSPACE/dockerx86/
+            mv openwrt-x86-64-generic-rootfs.tar.gz openwrt-x86-64-default-rootfs.tar.gz  
+            chmod +x $DOCKER_BUILD_SH
+            ./$DOCKER_BUILD_SH
+            mkdir dockerbuild
+            gzip -dc docker-img-openwrt-x86-latest.gz > ./dockerbuild
+            cd dockerbuild
+            echo "FIRMWARE_PATCHED=$PWD" >> $GITHUB_OUTPUT
 
         - name: Push
           if: github.event_name != 'pull_request'
           uses: docker/build-push-action@v6
           with:
+            context: ${{ steps.prebuild.outputs.FIRMWARE_PATCHED }}
             push: true
             tags: ${{ steps.meta.outputs.tags }}
-            build-args: ${{ steps.build_args.outputs.args }}
             labels: ${{ steps.meta.outputs.labels }}
             platforms: linux/${{ matrix.arch }}

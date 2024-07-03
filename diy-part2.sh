@@ -11,7 +11,10 @@
 #
 
 # Modify default IP
-#sed -i 's/192.168.1.1/192.168.50.5/g' package/base-files/files/bin/config_generate
+sed -i 's/192.168.1.1/192.168.255.9/g' package/base-files/files/bin/config_generate
+
+# Disable HTTPS Login
+sed -i 's/list listen_https/# list listen_https/' package/network/services/uhttpd/files/uhttpd.config
 
 # Modify default theme
 #sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' feeds/luci/collections/luci/Makefile
