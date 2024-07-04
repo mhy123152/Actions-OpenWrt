@@ -19,8 +19,8 @@ jobs:
       id: push
       run: |
         cd $GITHUB_WORKSPACE/mydockerx86
-        wget ${{ github.event.inputs.rootfs_url }} 
-        mv *.tar.gz openwrt-x86-64-default-rootfs.tar.gz  
+        wget -O rootfs.tar.gz ${{ github.event.inputs.rootfs_url }} 
+        mv rootfs.tar.gz openwrt-x86-64-default-rootfs.tar.gz  
         chmod +x build.sh
         ./build.sh
         gzip -dc docker-img-openwrt-x86-latest.gz | docker load
