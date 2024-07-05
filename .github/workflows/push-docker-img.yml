@@ -8,6 +8,14 @@ on:
         description: 'Openwrt rootfs file url'
         required: true
 
+      repo_branch:
+        description: 'Openwrt repository branch/tag'
+        default: "v19.07.9"
+        required: true
+
+env:
+  REPO_URL: https://github.com/openwrt/openwrt
+
 jobs:
   docker-build:
     runs-on: ubuntu-latest
@@ -24,6 +32,6 @@ jobs:
         ./build.sh && \
         gzip -dc docker-img-openwrt-x86-latest.gz | docker load && \
         docker login --username=${{ secrets.DOCKER_USER }} --password=${{ secrets.DOCKER_TOKEN }} && \
-        docker tag mhy123152/openwrt-rootfs mhy123152/openwrt-rootfs:x86_64 && \
+        docker tag openwrt-rootfs:latest mhy123152/openwrt-rootfs:x86_64-${{ github.event.inputs.repo_branch }} && \
         docker push mhy123152/openwrt-rootfs && \
         echo "status=success" >> $GITHUB_OUTPUT

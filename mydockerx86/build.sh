@@ -1,9 +1,12 @@
 #!/bin/bash
 
 TAG=latest
+if [ ! -z "$1" ];then
+	TAG=$1
+fi
 TMPDIR=openwrt_rootfs
 OUTDIR=/root/mydockerx86/
-IMG_NAME=mhy123152/openwrt-rootfs
+IMG_NAME=openwrt-rootfs
 
 [ -d "$TMPDIR" ] && rm -rf "$TMPDIR"
 sudo apt-get install pigz
