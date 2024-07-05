@@ -37,7 +37,7 @@ jobs:
         wget -O rootfs.tar.gz ${{ github.event.inputs.rootfs_url }} && \
         chmod +x build.sh && \
         ./build.sh ${{ env.DOCKER_USER }} ${{ env.DOCKER_REPO }} ${{ github.event.inputs.target }}-${{ github.event.inputs.repo_branch }} && \
-        gzip -dc docker-img-openwrt-x86-latest.gz | docker load && \
+        gzip -dc docker-img-openwrt.gz | docker load && \
         docker login --username=${{ secrets.DOCKER_USER }} --password-stdin=${{ secrets.DOCKER_TOKEN }} && \
         # docker tag \
         # ${{ env.DOCKER_USER }}/${{ env.DOCKER_REPO }}:latest \
