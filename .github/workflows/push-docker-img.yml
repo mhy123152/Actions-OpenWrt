@@ -26,4 +26,4 @@ jobs:
         docker login --username=${{ secrets.DOCKER_USER }} --password=${{ secrets.DOCKER_TOKEN }} && \
         docker tag mhy123152/openwrt-rootfs mhy123152/openwrt-rootfs:x86_64 && \
         docker push mhy123152/openwrt-rootfs && \
-        echo "status=success" >> $GITHUB_OUTPUT && \
+        echo "status=success" >> $GITHUB_OUTPUT
