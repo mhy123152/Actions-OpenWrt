@@ -42,5 +42,5 @@ jobs:
         # docker tag \
         # ${{ env.DOCKER_USER }}/${{ env.DOCKER_REPO }}:latest \
         # ${{ env.DOCKER_USER }}/${{ env.DOCKER_REPO }}:${{ github.event.inputs.target }}-${{ github.event.inputs.repo_branch }} && \
-        docker push ${{ env.DOCKER_USER }}/${{ env.DOCKER_REPO }} && \
+        docker push ${{ env.DOCKER_USER }}/${{ env.DOCKER_REPO }}:${{ github.event.inputs.target }}-${{ github.event.inputs.repo_branch }} && \
         echo "status=success" >> $GITHUB_OUTPUT
