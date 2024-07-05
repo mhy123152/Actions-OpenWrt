@@ -1,4 +1,5 @@
 name: Push docker containers
+run-name: ${{ inputs.repo_branch }} ${{ inputs.target }}
 
 on:
   repository_dispatch:
@@ -12,6 +13,11 @@ on:
         description: 'Openwrt repository branch/tag'
         default: "v19.07.9"
         required: true
+
+      target:
+          description: 'Openwrt repository branch/tag'
+          default: "x86_64"
+          required: true
 
 env:
   REPO_URL: https://github.com/openwrt/openwrt
