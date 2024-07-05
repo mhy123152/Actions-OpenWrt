@@ -20,7 +20,8 @@ on:
           required: true
 
 env:
-  REPO_URL: https://github.com/openwrt/openwrt
+  DOCKER_USER: mhy123152
+  DOCKER_REPO: openwrt-rootfs
 
 jobs:
   docker-build:
@@ -35,9 +36,11 @@ jobs:
         cd $GITHUB_WORKSPACE/mydockerx86 && \
         wget -O rootfs.tar.gz ${{ github.event.inputs.rootfs_url }} && \
         chmod +x build.sh && \
-        ./build.sh && \
+        ./build.sh ${{ env.DOCKER_USER }} ${{ env.DOCKER_REPO }} && \
         gzip -dc docker-img-openwrt-x86-latest.gz | docker load && \
         docker login --username=${{ secrets.DOCKER_USER }} --password=${{ secrets.DOCKER_TOKEN }} && \
-        docker tag openwrt-rootfs:latest mhy123152/openwrt-rootfs:x86_64-${{ github.event.inputs.repo_branch }} && \
-        docker push mhy123152/openwrt-rootfs && \
+        docker tag \
+        ${{ env.DOCKER_USER }}/${{ env.DOCKER_REPO }}:latest \
+        ${{ env.DOCKER_USER }}/${{ env.DOCKER_REPO }}:${{ github.event.inputs.target }}-${{ github.event.inputs.repo_branch }} && \
+        docker push ${{ env.DOCKER_USER }}/${{ env.DOCKER_REPO }} && \
         echo "status=success" >> $GITHUB_OUTPUT
