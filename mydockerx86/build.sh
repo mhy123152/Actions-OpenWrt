@@ -2,13 +2,13 @@
 
 TAG=latest
 TMPDIR=openwrt_rootfs
-OUTDIR=/root/dockerx86/
+OUTDIR=/root/mydockerx86/
 IMG_NAME=mhy123152/openwrt-rootfs
 
 [ -d "$TMPDIR" ] && rm -rf "$TMPDIR"
 sudo apt-get install pigz
 mkdir -p "$TMPDIR"  && \
-gzip -dc openwrt-x86-64-default-rootfs.tar.gz | ( cd "$TMPDIR" && tar xf - ) && \
+gzip -dc rootfs.tar.gz | ( cd "$TMPDIR" && tar xf - ) && \
 rm -f "$TMPDIR/etc/bench.log" && \
 sss=$(date +%s) && \
 ddd=$((sss/86400)) && \
